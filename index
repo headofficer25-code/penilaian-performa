@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a6ed1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Penilaian">
+    <title>PENILAIAN</title>
+    
+    <style>
+        /* CSS Reset & Fullscreen iFrame Wrapper */
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100dvh; 
+            overflow: hidden; background-color: #f3f4f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        iframe {
+            width: 100%; height: 100%; border: none; display: block;
+        }
+
+        /* --- STYLING UNTUK IKLAN/PROMPT INSTALL PWA --- */
+        #pwa-ad-banner {
+            position: fixed;
+            bottom: -150%; /* Tersembunyi di bawah */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 400px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            padding: 20px;
+            z-index: 9999;
+            transition: bottom 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        #pwa-ad-banner.show { bottom: 20px; }
+        .ad-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; width: 100%; text-align: left; }
+        .ad-icon { width: 50px; height: 50px; border-radius: 12px; background-color: #0a6ed1; object-fit: cover; }
+        .ad-title { font-size: 16px; font-weight: 700; color: #333; margin: 0; }
+        .ad-desc { font-size: 13px; color: #666; margin: 4px 0 0 0; line-height: 1.4; }
+        .ad-buttons { display: flex; gap: 10px; width: 100%; margin-top: 15px; }
+        .btn-install { flex: 1; background: #0a6ed1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(10, 110, 209, 0.3); transition: background 0.2s;}
+        .btn-install:hover { background: #0854a1; }
+        .btn-close { background: #f3f4f5; color: #555; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        
+        /* Instruksi Khusus iOS */
+        #ios-instructions { display: none; font-size: 13px; color: #444; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: left; width: 100%; border: 1px solid #e9ecef; }
+        .ios-icon-share { display: inline-block; width: 18px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+    <!-- BUNGKUSAN UTAMA GAS -->
+    <iframe src="https://script.google.com/macros/s/AKfycbwfkOucxT8ATizZaTelnb1Ge4zok3B-0ZAHeSirW9b5eh-7k-Ot62dGA7gIOz8cqyHH/exec" title="Sistem Penilaian"></iframe>
+
+    <!-- IKLAN / POPUP INSTALL APLIKASI -->
+    <div id="pwa-ad-banner">
+        <div class="ad-header">
+            <!-- Icon Aplikasi akan diload disini -->
+            <img id="display-app-icon" src="" alt="App Icon" class="ad-icon">
+            <div>
+                <h3 class="ad-title">Install Aplikasi Penilaian</h3>
+                <p class="ad-desc">Aplikasi bersifat Rahasia.Akses lebih cepat, ringan, dan tanpa gangguan browser. Pasang sekarang di layar utama Anda!</p>
+            </div>
+        </div>
+        
+        <div id="ios-instructions">
+            Untuk install di iPhone/iPad:<br>
+            1. Ketuk icon Share <svg class="ios-icon-share" viewBox="0 0 50 50" fill="currentColor"><path d="M25,2.1L10.4,16.7h9.5v16.7h10.2V16.7h9.5L25,2.1z M39.6,35.4v8.3H10.4v-8.3H2.1V50h45.8V35.4H39.6z"/></svg> di bawah.<br>
+            2. Geser ke bawah lalu pilih <strong>"Tambah ke Layar Utama"</strong>.
+        </div>
+
+        <div class="ad-buttons">
+            <button class="btn-close" onclick="closeAd()">Nanti Saja</button>
+            <button id="btn-install-trigger" class="btn-install">🚀 Install Sekarang</button>
+        </div>
+    </div>
+
+    <script>
+        // ====================================================================
+        // 1. PENGATURAN UTAMA (SILAKAN MASUKKAN URL ICON ANDA DI SINI)
+        // ====================================================================
+        const APP_CONFIG = {
+            title: "PENILAIAN KARYAWAN",
+            shortName: "Penilaian",
+            color: "#0a6ed1",
+            /* ↓↓↓ MASUKKAN URL ICON GAMBAR ANDA DI BAWAH INI (Harus HTTPS, Disarankan PNG 512x512) ↓↓↓ */
+            iconUrl: "https://cdn.phototourl.com/free/2026-09-13-506d23da-07e2-4efb-aed0-4ae6d9b40041.png", 
+            /* ↑↑↑ ========================================================= ↑↑↑ */
+            gasUrl: "https://script.google.com/macros/s/AKfycbwfkOucxT8ATizZaTelnb1Ge4zok3B-0ZAHeSirW9b5eh-7k-Ot62dGA7gIOz8cqyHH/exec"
+        };
+
+        // Pasang icon ke Iklan UI
+        document.getElementById('display-app-icon').src = APP_CONFIG.iconUrl;
+
+        // ====================================================================
+        // 2. INLINE PWA GENERATOR (TIDAK PERLU FILE EKSTERNAL)
+        // ====================================================================
+        
+        // A. Generate Manifest.json secara dinamis (Data URI)
+        const manifestJSON = {
+            name: APP_CONFIG.title,
+            short_name: APP_CONFIG.shortName,
+            start_url: location.href,
+            display: "standalone",
+            background_color: "#f3f4f5",
+            theme_color: APP_CONFIG.color,
+            icons: [
+                { src: APP_CONFIG.iconUrl, sizes: "192x192", type: "image/png" },
+                { src: APP_CONFIG.iconUrl, sizes: "512x512", type: "image/png" }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestJSON)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+
+        // B. Generate Service Worker secara dinamis (Blob Object URL)
+        // Service worker dasar agar memenuhi syarat PWA browser (Fetch event harus ada)
+        const swCode = `
+            self.addEventListener('install', (e) => { self.skipWaiting(); });
+            self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
+            self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request)); });
+        `;
+        const swBlob = new Blob([swCode], {type: 'application/javascript'});
+        const swUrl = URL.createObjectURL(swBlob);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW Setup Failed', err));
+            });
+        }
+
+        // ====================================================================
+        // 3. LOGIK IKLAN / INSTALASI (ANDROID & IOS)
+        // ====================================================================
+        let deferredPrompt;
+        const adBanner = document.getElementById('pwa-ad-banner');
+        const installBtn = document.getElementById('btn-install-trigger');
+        const iosInstructions = document.getElementById('ios-instructions');
+
+        // Deteksi Device / OS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        function showAdBanner() {
+            if (isStandalone) return; // Jangan tampilkan jika sudah di-install
+            
+            // Beri delay sedikit agar web utama load dulu, baru iklan muncul (Psikologi Iklan)
+            setTimeout(() => {
+                adBanner.classList.add('show');
+            }, 2500); 
+        }
+
+        function closeAd() {
+            adBanner.classList.remove('show');
+            // Opsional: Simpan di localStorage agar tidak terus-terusan mengganggu jika user klik 'Nanti Saja'
+            // localStorage.setItem('pwaAdDismissed', 'true');
+        }
+
+        if (!isStandalone) {
+            if (isIOS) {
+                // LOGIK IOS: Tidak ada native prompt, tunjukkan instruksi manual
+                iosInstructions.style.display = "block";
+                installBtn.style.display = "none"; // Sembunyikan tombol native
+                showAdBanner();
+            } else {
+                // LOGIK ANDROID / CHROME: Tangkap event sebelum install
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    deferredPrompt = e;
+                    showAdBanner();
+                });
+
+                // Eksekusi ketika tombol install ditekan
+                installBtn.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            console.log('User menerima instalasi');
+                            closeAd();
+                        }
+                        deferredPrompt = null;
+                    } else {
+                        alert('Browser Anda tidak mendukung instalasi otomatis. Gunakan menu titik tiga di pojok atas, lalu pilih "Install App / Tambahkan ke Layar Utama".');
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
